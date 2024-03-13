@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixelated Drawing Pad</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    #canvas-container {
+        text-align: center;
+    }
+    #canvas {
+        border: 1px solid black;
+    }
+    #image-container {
+        margin-top: 20px;
+        text-align: center;
+    }
+    #displayed-image {
+        width: 200px;
+        height: 200px;
+        border: 1px solid black;
+    }
+    .btn-container {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .btn {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        margin: 0 10px;
+    }
+    #result-container {
+        margin-top: 20px;
+        text-align: center;
+    }
+    h1 {
+        text-align: center;
+    }
+     #result-container {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 50px; /* Increase font size */
+        border: 2px solid #4CAF50; /* Add border */
+        padding: 10px; /* Add padding */
+        border-radius: 5px; /* Add border radius */
+    }
+</style>
+</head>
+<body>
+<h1>Pixelated Drawing Pad</h1>
+<div id="canvas-container">
+    <canvas id="canvas" width="280" height="280"></canvas><br>
+    <div class="btn-container">
+        <button class="btn" id="submit-btn">Submit</button>
+        <button class="btn" id="eraser-btn">Eraser</button>
+        <button class="btn" id="clear-btn">Erase All</button>
+    </div>
+</div>
+
+<div id="result-container"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const submitBtn = document.getElementById('submit-btn');
+        const eraserBtn = document.getElementById('eraser-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const displayedImage = document.getElementById('displayed-image');
+        const resultContainer = document.getElementById('result-container');
+
+        let drawing = false;
+        let erasing = false;
+
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+
+        submitBtn.addEventListener('click', function() {
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == XMLHttpRequest.DONE) {
+                    if (xhr.status == 200) {
+                        resultContainer.textContent = xhr.responseText;
+                    } else {
+                        console.error('Error:', xhr.status);
+                    }
+                }
+            };
+            xhr.open('POST', '/digit_recognization', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({ imageDataURL: canvas.toDataURL('image/png') }));
+        });
+        eraserBtn.addEventListener('click', toggleEraser);
+        clearBtn.addEventListener('click', clearCanvas);
+
+        function startPosition(e) {
+            if (erasing) return;
+            drawing = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            drawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!drawing && !erasing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const size = 10;
+
+            if (drawing) {
+                ctx.fillStyle = 'black';
+            } else if (erasing) {
+                ctx.fillStyle = 'white';
+            }
+            ctx.fillRect(Math.floor(x / 10) * 10, Math.floor(y / 10) * 10, size, size);
+        }
+
+        function toggleEraser() {
+            erasing = !erasing;
+            if (erasing) {
+                eraserBtn.textContent = 'Drawing';
+            } else {
+                eraserBtn.textContent = 'Eraser';
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            displayedImage.src = '';
+        }
+    });
+</script>
+</body>
+</html>
